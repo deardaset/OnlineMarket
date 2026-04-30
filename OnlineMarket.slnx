@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="OnlineMarket.API/OnlineMarket.API.csproj" />
+  <Project Path="OnlineMarket.Application/OnlineMarket.Application.csproj" Id="4057fad7-6b55-4b24-a5a8-083f13f7717d" />
+  <Project Path="OnlineMarket.Core/OnlineMarket.Core.csproj" Id="ed69d215-30c8-4187-9aa2-2999e1466603" />
+  <Project Path="OnlineMarket.Infrastructure/OnlineMarket.Infrastructure.csproj" Id="b7074419-348e-46be-b238-ff653d0e1b1c" />
+  <Project Path="OnlineMarket.SharedKernel.Contracts/OnlineMarket.SharedKernel.Contracts.csproj" Id="b410c1ce-b7d3-4f2b-b243-149dfecfc45d" />
+  <Project Path="OnlineMarket.SharedKernel/OnlineMarket.SharedKernel.csproj" Id="47b680d9-ec5c-4eae-a799-532ccc62b9cc" />
+  <Project Path="OnlineMarket/OnlineMarket.Client.csproj" />
+</Solution>
