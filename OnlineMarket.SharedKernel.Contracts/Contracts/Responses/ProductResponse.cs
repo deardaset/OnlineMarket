@@ -13,6 +13,6 @@ namespace OnlineMarket.SharedKernel.Contracts.Contracts.Responses
         public ProductCategory Category { get; set; }
         public decimal Price { get; set; }
         public string? PhotoUrl { get; set; }
-        public List<OrderProductResponse> Orders { get; set; } = null!;
+        public List<OrderResponse> Orders { get; set; } = null!;
     }
 }

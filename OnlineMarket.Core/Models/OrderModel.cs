@@ -6,7 +6,7 @@ namespace OnlineMarket.Core.Entities
 {
     public class OrderModel
     {
-        public Guid Id { get; private set; } = Guid.NewGuid();
-        public List<OrderProductModel> Products { get; private set; } = null!;
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public List<ProductModel> Products { get; set; } = null!;
     }
 }

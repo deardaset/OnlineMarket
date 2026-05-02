@@ -9,7 +9,7 @@ using System.Text;
 
 namespace OnlineMarket.Application.Services.Order
 {
-    public class CreateOrderService(IOrderRepository repository, IMapper mapper) : ICreateOrderService
+    public class CreateOrderService(IOrderRepository repository) : ICreateOrderService
     {
         public async Task<OrderResponse> RunAsync()
         {
@@ -17,7 +17,10 @@ namespace OnlineMarket.Application.Services.Order
 
             await repository.CreateOrderAsync(order);
 
-            return mapper.Map<OrderResponse>(order);
+            return new OrderResponse
+            {
+                Id = order.Id
+            };
         }
     }
 }

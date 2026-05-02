@@ -8,7 +8,7 @@ using System.Text;
 
 namespace OnlineMarket.Application.Services.Order
 {
-    public class DeleteOrderService(IOrderRepository repository, IMapper mapper) : IDeleteOrderService
+    public class DeleteOrderService(IOrderRepository repository) : IDeleteOrderService
     {
         public async Task RunAsync(Guid guid)
         {

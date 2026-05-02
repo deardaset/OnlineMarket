@@ -8,13 +8,25 @@ using System.Text;
 
 namespace OnlineMarket.Application.Services.Order
 {
-    public class GetAllOrdersService(IOrderRepository repository, IMapper mapper) : IGetAllOrdersService
+    public class GetAllOrdersService(IOrderRepository repository) : IGetAllOrdersService
     {
         public async Task<PagedResponse<OrderResponse>> RunAsync()
         {
             var (orders, total) = await repository.GetAllOrderAsync();
 
-            var ordersResponse = mapper.Map<List<OrderResponse>>(orders);
+            var ordersResponse = orders.Select(o => new OrderResponse
+            {
+                Id = o.Id,
+                Products = o.Products.Select(p => new ProductResponse
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Category = p.Category,
+                    Price = p.Price,
+                    PhotoUrl = p.PhotoUrl
+                }).ToList(),
+            }).ToList();
 
             return new PagedResponse<OrderResponse>
             {

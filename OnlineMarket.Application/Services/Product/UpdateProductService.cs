@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Routing.Tree;
 using Microsoft.EntityFrameworkCore;
 using OnlineMarket.Application.Interfaces.Product;
 using OnlineMarket.Core.Exceptions;
@@ -11,7 +13,7 @@ using System.Text;
 
 namespace OnlineMarket.Application.Services.Product
 {
-    public class UpdateProductService(IProductRepository repository, IStorageService storage, IMapper mapper) : IUpdateProductService
+    public class UpdateProductService(IProductRepository repository, IStorageService storage) : IUpdateProductService
     {
         public async Task<ProductResponse> RunAsync(Guid guid, UpdateProductRequest request)
         {
@@ -28,17 +30,34 @@ namespace OnlineMarket.Application.Services.Product
                 photoUrl = await storage.UploadAsync(request.Photo.OpenReadStream(), request.Photo.FileName, request.Photo.ContentType);
             }
 
-            product.Update(
-                name: request.Name,
-                description: request.Description,
-                category: request.Category,
-                price: request.Price,
-                photoUrl: photoUrl
-                );
+            bool hasChanges = false;
+
+            if (request.Name is { } name && name != product.Name)
+                (product.Name, hasChanges) = (name, true);
+            if (request.Description is { } desc && desc != product.Description)
+                (product.Description, hasChanges) = (desc, true);
+            if (request.Category is { } cat && cat != product.Category)
+                (product.Category, hasChanges) = (cat, true);
+            if (request.Price is { } price && price != product.Price)
+                (product.Price, hasChanges) = (price, true);
+            if (photoUrl is { } url && url != product.PhotoUrl)
+                (product.PhotoUrl, hasChanges) = (url, true);
 
             await repository.UpdateProductAsync(product);
 
-            return mapper.Map<ProductResponse>(product);
+            return new ProductResponse
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Category = product.Category,
+                Price = product.Price,
+                PhotoUrl = product.PhotoUrl,
+                Orders = product.Orders.Select(o => new OrderResponse
+                {
+                    Id = o.Id
+                }).ToList()
+            };
         }
     }
 }
