@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using OnlineMarket.Application.Interfaces.Product;
-using OnlineMarket.Core.Entities;
+using OnlineMarket.Core.Models;
 using OnlineMarket.Core.Interfaces;
 using OnlineMarket.SharedKernel.Contracts.Contracts.Requests.Product;
 using OnlineMarket.SharedKernel.Contracts.Contracts.Responses;

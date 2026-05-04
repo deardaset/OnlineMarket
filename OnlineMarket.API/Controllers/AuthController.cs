@@ -35,7 +35,7 @@ namespace OnlineMarket.API.Controllers
 
         [HttpGet("user")]
         [Authorize]
-        public async Task<IActionResult> User([FromServices] GetUserInfoService service)
+        public async Task<IActionResult> UserInfo([FromServices] GetUserInfoService service)
         {
             var result = await service.RunAsync(base.User);
             return Ok(result);

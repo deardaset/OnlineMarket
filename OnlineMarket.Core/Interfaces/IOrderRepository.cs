@@ -1,4 +1,4 @@
-﻿using OnlineMarket.Core.Entities;
+﻿using OnlineMarket.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;

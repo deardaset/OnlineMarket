@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace OnlineMarket.Core.Entities
+namespace OnlineMarket.Core.Models
 {
     public class OrderModel
     {

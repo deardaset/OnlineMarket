@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using OnlineMarket.Core.Entities;
+using OnlineMarket.Core.Models;
 using OnlineMarket.Core.Interfaces;
 using OnlineMarket.Infrastructure.Data;
 using OnlineMarket.Infrastructure.Entities;

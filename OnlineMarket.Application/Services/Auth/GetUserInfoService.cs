@@ -10,11 +10,11 @@ namespace OnlineMarket.Application.Services.Auth
 {
     public class GetUserInfoService(UserManager<AppUser> userManager)
     {
-        public async Task<MeResponse?> RunAsync(ClaimsPrincipal principal)
+        public async Task<MeResponse> RunAsync(ClaimsPrincipal principal)
         {
             var user = await userManager.GetUserAsync(principal);
             if (user is null)
-                return null;
+                return null!;
 
             return new MeResponse
             {
