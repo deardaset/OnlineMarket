@@ -1,4 +1,6 @@
-﻿using OnlineMarket.Application.Services.Product;
+﻿using OnlineMarket.Application.Interfaces.Product;
+using OnlineMarket.Application.Services.AuthServices;
+using OnlineMarket.Application.Services.ProductServices;
 using OnlineMarket.Core.Interfaces;
 using OnlineMarket.Infrastructure.Repositories;
 

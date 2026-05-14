@@ -8,6 +8,6 @@ namespace OnlineMarket.Application.Interfaces.Order
 {
     public interface ICreateOrderService
     {
-        public Task<OrderResponse> RunAsync();
+        public Task<OrderResponse> RunAsync(Guid userId);
     }
 }

@@ -13,6 +13,6 @@ namespace OnlineMarket.Core.Models
         public ProductCategory Category {  get; set; }
         public decimal Price { get; set; }
         public string? PhotoUrl { get; set; }
-        public List<OrderModel> Orders { get; set; } = null!;
+        public List<OrderProductModel> Orders { get; set; } = null!;
     }
 }

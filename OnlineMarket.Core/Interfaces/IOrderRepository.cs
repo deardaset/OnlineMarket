@@ -10,7 +10,10 @@ namespace OnlineMarket.Core.Interfaces
         public Task CreateOrderAsync(OrderModel order);
         public Task<OrderModel?> GetOrderByIdAsync(Guid guid);
         public Task<(List<OrderModel>, int total)> GetAllOrderAsync();
+        public Task<List<OrderModel>> GetOrdersByUserIdAsync(Guid userId);
         public Task UpdateOrderAsync(OrderModel order);
         public Task DeleteOrderAsync(OrderModel order);
+        public Task<bool> AddProductToOrderAsync(Guid orderId, Guid productId);
+        public Task<bool> RemoveProductFromOrderAsync(Guid orderId, Guid productId);
     }
 }

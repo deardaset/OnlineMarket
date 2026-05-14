@@ -7,6 +7,7 @@ namespace OnlineMarket.SharedKernel.Contracts.Contracts.Responses
     public class OrderResponse
     {
         public Guid Id { get; set; }
-        public List<ProductResponse> Products { get; set; } = null!;
+        public Guid UserId { get; set; }
+        public List<OrderProductResponse> Products { get; set; } = null!;
     }
 }

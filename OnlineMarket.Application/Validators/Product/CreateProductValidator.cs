@@ -32,7 +32,8 @@ namespace OnlineMarket.Application.Validators.Product
                     var allowed = new[] { ".jpg", ".jpeg", ".png" };
                     var ext = Path.GetExtension(file!.FileName).ToLower();
                     return allowed.Contains(ext);
-                }).WithMessage("Allowed extensions: .jpg, .jpeg, .png");
+                }).WithMessage("Allowed extensions: .jpg, .jpeg, .png")
+                .When(x => x.Photo is not null);
         }
     }
 }

@@ -1,6 +1,25 @@
-﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-</Router>
+﻿@using OnlineMarket.Client.Shared
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                
+                <NotAuthorized>
+                    <RedirectToLogin />
+                </NotAuthorized>
+
+            </AuthorizeRouteView>
+        </Found>
+
+        <NotFound>
+            <LayoutView Layout="@typeof(Layout.MainLayout)">
+                <div class="text-center mt-24 text-slate-400">
+                    <h1 class="text-3xl font-bold mb-2">404</h1>
+                    <p>Страница не найдена</p>
+                </div>
+            </LayoutView>
+        </NotFound>
+
+    </Router>
+</CascadingAuthenticationState>

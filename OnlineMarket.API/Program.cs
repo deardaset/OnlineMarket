@@ -8,8 +8,14 @@ using OnlineMarket.Application.Validators.Product;
 using OnlineMarket.Infrastructure.Data;
 using OnlineMarket.Infrastructure.Mappings;
 using OnlineMarket.Infrastructure.Users;
+using OnlineMarket.SharedKernel.Contracts.Enums;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var culture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
 
 // Add services to the container.
 
@@ -38,24 +44,24 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(opts => {
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders();
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(opts => {
-        opts.Cookie.Name = "auth";
-        opts.Cookie.HttpOnly = true;
-        opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        opts.Cookie.SameSite = SameSiteMode.None;
-        opts.ExpireTimeSpan = TimeSpan.FromHours(8);
-        opts.SlidingExpiration = true;
+builder.Services.ConfigureApplicationCookie(opts => {
+    opts.Cookie.Name = "auth";
+    opts.Cookie.HttpOnly = true;
+    opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    opts.Cookie.SameSite = SameSiteMode.None;
+    opts.ExpireTimeSpan = TimeSpan.FromHours(8);
+    opts.SlidingExpiration = true;
 
-        opts.Events.OnRedirectToLogin = ctx => {
-            ctx.Response.StatusCode = 401;
-            return Task.CompletedTask;
-        };
-        opts.Events.OnRedirectToAccessDenied = ctx => {
-            ctx.Response.StatusCode = 403;
-            return Task.CompletedTask;
-        };
-    });
+    opts.Events.OnRedirectToLogin = ctx => {
+        ctx.Response.StatusCode = 401;
+        return Task.CompletedTask;
+    };
+    opts.Events.OnRedirectToAccessDenied = ctx => {
+        ctx.Response.StatusCode = 403;
+        return Task.CompletedTask;
+    };
+});
+
 
 builder.Services.AddAuthorization();
 
@@ -86,6 +92,21 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+    foreach (var role in Enum.GetValues<Roles>())
+    {
+        var roleName = role.ToString();
+
+        if (!await roleManager.RoleExistsAsync(roleName))
+        {
+            await roleManager.CreateAsync(new IdentityRole(roleName));
+        }
+    }
+};
 
 app.UseHttpsRedirection();
 

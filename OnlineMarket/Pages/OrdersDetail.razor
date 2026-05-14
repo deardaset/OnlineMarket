@@ -1,0 +1,166 @@
+﻿@page "/orders/{Id:guid}"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject OrderService OrderSvc
+@inject ProductService ProductSvc
+@inject NavigationManager Nav
+
+<PageTitle>Заказ — OnlineMarket</PageTitle>
+
+@if (_order is null && _loading)
+{
+    <div class="space-y-4">
+        <div class="bg-slate-800 rounded-2xl h-10 w-64 animate-pulse"></div>
+        <div class="bg-slate-800 rounded-2xl h-48 animate-pulse"></div>
+    </div>
+}
+else if (_order is null)
+{
+    <p class="text-center text-slate-400 mt-24">Заказ не найден.</p>
+}
+else
+{
+    <div class="flex items-center gap-3 mb-6">
+        <button @onclick='() => Nav.NavigateTo("/orders")'
+                class="text-slate-400 hover:text-white transition text-sm">
+            ← Назад
+        </button>
+        <h1 class="text-2xl font-bold">Заказ</h1>
+        <span class="text-slate-500 font-mono text-xs">@_order.Id</span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Products list -->
+        <div class="lg:col-span-2 space-y-3">
+            @foreach (var op in _order.Products)
+            {
+                var p = op.Product;
+                <div class="bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-4 p-4">
+                    <div class="w-16 h-16 rounded-lg bg-slate-800 overflow-hidden flex-shrink-0">
+                        @if (p?.PhotoUrl is not null)
+                        {
+                            <img src="@p.PhotoUrl" class="w-full h-full object-cover" />
+                        }
+                        else
+                        {
+                            <div class="w-full h-full flex items-center justify-center text-2xl">🛍</div>
+                        }
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium">@(p?.Name ?? "—")</p>
+                        <p class="text-xs text-slate-400">@(p is not null ? CategoryLabel(p.Category) : "")</p>
+                    </div>
+                    <div class="text-right">
+                        <!-- Цена берётся из OrderProductResponse.Price (зафиксирована на момент заказа) -->
+                        <p class="font-bold text-white">@op.Price.ToString("C")</p>
+                        <button @onclick="() => Remove(op.ProductId)"
+                                class="text-xs text-red-400 hover:text-red-300 transition mt-1">
+                            Удалить
+                        </button>
+                    </div>
+                </div>
+            }
+
+            @if (_order.Products.Count == 0)
+            {
+                <div class="bg-slate-900 border border-dashed border-slate-700 rounded-xl p-10
+                    text-center text-slate-400">
+                    Заказ пуст. Добавьте товары из каталога.
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-4">
+            <!-- Summary -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h2 class="font-semibold mb-4">Итого</h2>
+                <div class="space-y-2 text-sm text-slate-400">
+                    <div class="flex justify-between">
+                        <span>Товаров</span>
+                        <span class="text-white">@_order.Products.Count</span>
+                    </div>
+                    <div class="flex justify-between border-t border-slate-800 pt-2 font-bold text-white text-base">
+                        <span>Сумма</span>
+                        <!-- Суммируем Price из OrderProductResponse -->
+                        <span>@(_order.Products.Sum(op => op.Price).ToString("C"))</span>
+                    </div>
+                </div>
+                <button @onclick="Cancel"
+                        class="w-full mt-5 py-2 bg-red-950 hover:bg-red-900 text-red-400
+                    rounded-lg text-sm font-medium transition">
+                    Отменить заказ
+                </button>
+            </div>
+
+            <!-- Add product -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                <h2 class="font-semibold mb-3">Добавить товар</h2>
+                <select @bind="_selectedProductId"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2
+                    text-sm focus:outline-none focus:border-violet-500">
+                    <option value="">— выбрать —</option>
+                    @foreach (var p in _allProducts)
+                    {
+                        <option value="@p.Id">@p.Name (@p.Price.ToString("C"))</option>
+                    }
+                </select>
+                <button @onclick="AddProduct" disabled="@(_selectedProductId == "")"
+                        class="w-full mt-3 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-40
+                    rounded-lg text-sm font-medium transition">
+                    Добавить
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    OrderResponse? _order;
+    List<ProductResponse> _allProducts = new();
+    string _selectedProductId = "";
+    bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _order = await OrderSvc.GetOrderAsync(Id);
+        var paged = await ProductSvc.GetProductsAsync(pageSize: 100);
+        _allProducts = paged?.Items ?? new();
+        _loading = false;
+    }
+
+    async Task Remove(Guid productId)
+    {
+        await OrderSvc.RemoveProductFromOrderAsync(_order!.Id, productId);
+        _order = await OrderSvc.GetOrderAsync(Id);
+    }
+
+    async Task AddProduct()
+    {
+        if (!Guid.TryParse(_selectedProductId, out var pid)) return;
+        await OrderSvc.AddProductToOrderAsync(_order!.Id, pid);
+        _order = await OrderSvc.GetOrderAsync(Id);
+        _selectedProductId = "";
+    }
+
+    async Task Cancel()
+    {
+        await OrderSvc.CancelOrderAsync(_order!.Id);
+        Nav.NavigateTo("/orders");
+    }
+
+    static string CategoryLabel(ProductCategory c) => c switch
+    {
+        ProductCategory.Food => "Еда",
+        ProductCategory.Grocery => "Садоводство",
+        ProductCategory.Drinks => "Напитки",
+        ProductCategory.HouseHold => "Бытовая химия",
+        ProductCategory.PersonalCare => "Средства ухода",
+        ProductCategory.BabyProducts => "Товары для детей",
+        ProductCategory.Medicine => "Медикаменты",
+        _ => "—"
+    };
+}

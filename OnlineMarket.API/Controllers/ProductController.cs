@@ -1,8 +1,10 @@
 ﻿using Amazon.S3.Model.Internal.MarshallTransformations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using OnlineMarket.Application.Services.Product;
+using OnlineMarket.Application.Interfaces.Product;
+using OnlineMarket.Application.Services.ProductServices;
 using OnlineMarket.SharedKernel.Contracts.Contracts.Requests.Product;
 
 namespace OnlineMarket.API.Controllers
@@ -12,22 +14,22 @@ namespace OnlineMarket.API.Controllers
     public class ProductController : ControllerBase
     {
         [HttpPost]
-        public async Task<IActionResult> CreateProductAsync([FromServices] CreateProductService service, [FromForm] CreateProductRequest request)
+        public async Task<IActionResult> CreateProductAsync([FromServices] ICreateProductService service, [FromForm] CreateProductRequest request)
         {
             var result = await service.RunAsync(request);
             return Ok(result);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllProductAsync([FromServices] GetAllProductsService service)
+        public async Task<IActionResult> GetAllProductAsync([FromServices] IGetAllProductsService service, [FromQuery] GetAllProductsParametersRequest request)
         {
-            var result = await service.RunAsync();
+            var result = await service.RunAsync(request);
             return Ok(result);
         }
 
         [HttpPut]
         [Route("{guid}")]
-        public async Task<IActionResult> UpdateProductAsync([FromRoute] Guid guid, [FromServices] UpdateProductService service, [FromForm] UpdateProductRequest request)
+        public async Task<IActionResult> UpdateProductAsync([FromRoute] Guid guid, [FromServices] IUpdateProductService service, [FromForm] UpdateProductRequest request)
         {
             var result = await service.RunAsync(guid, request);
             return Ok(result);
@@ -35,7 +37,7 @@ namespace OnlineMarket.API.Controllers
 
         [HttpDelete]
         [Route("{guid}")]
-        public async Task<IActionResult> DeleteProductAsync([FromRoute] Guid guid, [FromServices] DeleteProductService service)
+        public async Task<IActionResult> DeleteProductAsync([FromRoute] Guid guid, [FromServices] IDeleteProductService service)
         {
             await service.RunAsync(guid);
             return Ok();

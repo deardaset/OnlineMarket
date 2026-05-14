@@ -1,0 +1,113 @@
+﻿@page "/register"
+@inject AuthService AuthSvc
+@inject NavigationManager Nav
+
+<PageTitle>Регистрация — OnlineMarket</PageTitle>
+
+<div class="flex items-center justify-center min-h-[70vh]">
+    <div class="w-full max-w-md">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+
+            <h1 class="text-2xl font-bold mb-1">Создать аккаунт</h1>
+            <p class="text-slate-400 text-sm mb-6">
+                Уже есть аккаунт?
+                <a href="/login" class="text-violet-400 hover:underline">Войти</a>
+            </p>
+
+            @if (_error is not null)
+            {
+                <div class="mb-4 px-4 py-3 bg-red-950 border border-red-800 rounded-lg text-red-300 text-sm">
+                    @_error
+                </div>
+            }
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Email</label>
+                    <input @bind="_email" type="email" placeholder="you@example.com"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5
+                    text-sm focus:outline-none focus:border-violet-500 transition" />
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Пароль</label>
+                    <input @bind="_password" type="password" placeholder="••••••••"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5
+                    text-sm focus:outline-none focus:border-violet-500 transition" />
+                </div>
+
+                <!-- Role selection -->
+                <div>
+                    <label class="block text-xs text-slate-400 mb-2">Роль</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" @onclick='() => _role = "User"'
+                                class="@RoleCls("User") flex flex-col items-center gap-1.5 py-3 px-4
+                            rounded-xl border text-sm font-medium transition">
+                            <span class="text-xl">👤</span>
+                            <span>Покупатель</span>
+                        </button>
+                        <button type="button" @onclick='() => _role = "Admin"'
+                                class="@RoleCls("Admin") flex flex-col items-center gap-1.5 py-3 px-4
+                            rounded-xl border text-sm font-medium transition">
+                            <span class="text-xl">🛠</span>
+                            <span>Администратор</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Admin secret (shown only if Admin selected) -->
+                @if (_role == "Admin")
+                {
+                    <div class="animate-fade-in">
+                        <label class="block text-xs text-slate-400 mb-1">
+                            Секретный ключ администратора
+                        </label>
+                        <input @bind="_adminSecret" type="password" placeholder="••••••••"
+                               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5
+                        text-sm focus:outline-none focus:border-violet-500 transition" />
+                        <p class="text-xs text-slate-500 mt-1">Требуется для создания аккаунта администратора.</p>
+                    </div>
+                }
+
+                <button @onclick="DoRegister" disabled="@_loading"
+                        class="w-full py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50
+                    rounded-lg font-semibold text-sm transition mt-2">
+                    @(_loading ? "Регистрация..." : "Создать аккаунт")
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    string _email = "";
+    string _password = "";
+    string _role = "User";
+    string _adminSecret = "";
+    string? _error;
+    bool _loading;
+
+    async Task DoRegister()
+    {
+        _loading = true;
+        _error = null;
+
+        var ok = await AuthSvc.RegisterAsync(new RegisterRequest
+        {
+            Email = _email,
+            Password = _password,
+            Role = _role,
+            AdminSecret = _role == "Admin" ? _adminSecret : null
+        });
+
+        _loading = false;
+
+        if (ok) Nav.NavigateTo("/products");
+        else _error = "Ошибка регистрации. Проверьте данные или секретный ключ.";
+    }
+
+    string RoleCls(string role) =>
+        _role == role
+            ? "bg-violet-900/60 border-violet-500 text-white"
+            : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300";
+}
