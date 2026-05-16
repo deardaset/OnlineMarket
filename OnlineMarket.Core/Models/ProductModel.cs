@@ -8,11 +8,11 @@ namespace OnlineMarket.Core.Models
     public class ProductModel
     {
         public Guid Id { get;  set; } = Guid.NewGuid();
-        public string Name { get; set; } = null!;
+        public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
         public ProductCategory Category {  get; set; }
         public decimal Price { get; set; }
         public string? PhotoUrl { get; set; }
-        public List<OrderProductModel> Orders { get; set; } = null!;
+        public List<OrderProductModel> Orders { get; set; } = [];
     }
 }

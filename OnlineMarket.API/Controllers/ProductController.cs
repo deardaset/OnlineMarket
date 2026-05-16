@@ -14,6 +14,7 @@ namespace OnlineMarket.API.Controllers
     public class ProductController : ControllerBase
     {
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateProductAsync([FromServices] ICreateProductService service, [FromForm] CreateProductRequest request)
         {
             var result = await service.RunAsync(request);
@@ -27,8 +28,16 @@ namespace OnlineMarket.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{guid}")]
+        public async Task<IActionResult> GetProductByIdAsync([FromRoute] Guid guid, [FromServices] IGetProductByIdService service)
+        {
+            var result = await service.RunAsync(guid);
+            return Ok(result);
+        }
+
         [HttpPut]
         [Route("{guid}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateProductAsync([FromRoute] Guid guid, [FromServices] IUpdateProductService service, [FromForm] UpdateProductRequest request)
         {
             var result = await service.RunAsync(guid, request);
@@ -37,6 +46,7 @@ namespace OnlineMarket.API.Controllers
 
         [HttpDelete]
         [Route("{guid}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProductAsync([FromRoute] Guid guid, [FromServices] IDeleteProductService service)
         {
             await service.RunAsync(guid);

@@ -41,6 +41,10 @@ else if (_paged?.Items.Count == 0)
 {
     <p class="text-center text-slate-400 mt-20">Товары не найдены.</p>
 }
+else if (_paged is null)
+{
+    <p class="text-center text-red-300 mt-20">Не удалось загрузить каталог.</p>
+}
 else
 {
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -148,14 +152,21 @@ else
         // Создаём новый заказ и добавляем товар
         var order = await OrderSvc.CreateOrderAsync();
         if (order is null) { ShowToast("Ошибка создания заказа"); return; }
-        await OrderSvc.AddProductToOrderAsync(order.Id, p.Id);
-        ShowToast($"«{p.Name}» добавлен в заказ");
+        var added = await OrderSvc.AddProductToOrderAsync(order.Id, p.Id);
+        ShowToast(added ? $"«{p.Name}» добавлен в заказ" : "Не удалось добавить товар");
     }
 
     void ShowToast(string msg)
     {
         _toast = msg;
-        _ = Task.Delay(3000).ContinueWith(_ => { _toast = null; InvokeAsync(StateHasChanged); });
+        _ = HideToastAsync();
+    }
+
+    async Task HideToastAsync()
+    {
+        await Task.Delay(3000);
+        _toast = null;
+        await InvokeAsync(StateHasChanged);
     }
 
     string FilterCls(ProductCategory? c) =>

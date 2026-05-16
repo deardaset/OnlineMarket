@@ -1,6 +1,6 @@
 ﻿@page "/admin"
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles="Admin")]
+@attribute [Authorize(Roles = "Admin")]
 @inject ProductService ProductSvc
 @inject OrderService OrderSvc
 @inject NavigationManager Nav
@@ -41,12 +41,19 @@
     @if (_productsLoading)
     {
         <div class="space-y-3">
-            @for (int i = 0; i < 5; i++) { <div class="bg-slate-800 h-16 rounded-xl animate-pulse"></div> }
+            @for (int i = 0; i < 5; i++)
+            {
+                <div class="bg-slate-800 h-16 rounded-xl animate-pulse"></div>
+            }
         </div>
     }
     else if (_products?.Items.Count == 0)
     {
         <p class="text-slate-400 text-center mt-12">Товаров нет.</p>
+    }
+    else if (_products is null)
+    {
+        <p class="text-red-300 text-center mt-12">Не удалось загрузить товары.</p>
     }
     else
     {
@@ -147,6 +154,10 @@
     {
         <p class="text-slate-400 text-center mt-12">Заказов нет.</p>
     }
+    else if (_orders is null)
+    {
+        <p class="text-red-300 text-center mt-12">Не удалось загрузить заказы.</p>
+    }
     else
     {
         <div class="space-y-4">
@@ -245,14 +256,14 @@
                     <label class="block text-xs text-slate-400 mb-1">Название</label>
                     <input @bind="_formName" placeholder="Название товара"
                            class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm
-                                  focus:outline-none focus:border-violet-500 transition" />
+                    focus:outline-none focus:border-violet-500 transition" />
                 </div>
 
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Описание</label>
                     <textarea @bind="_formDescription" rows="3" placeholder="Описание (необязательно)"
                               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm
-                                     focus:outline-none focus:border-violet-500 transition resize-none">
+                        focus:outline-none focus:border-violet-500 transition resize-none">
                     </textarea>
                 </div>
 
@@ -261,7 +272,7 @@
                         <label class="block text-xs text-slate-400 mb-1">Категория</label>
                         <select @bind="_formCategory"
                                 class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm
-                                       focus:outline-none focus:border-violet-500 transition">
+                            focus:outline-none focus:border-violet-500 transition">
                             @foreach (var cat in Enum.GetValues<ProductCategory>())
                             {
                                 <option value="@cat">@CategoryLabel(cat)</option>
@@ -273,7 +284,7 @@
                         <label class="block text-xs text-slate-400 mb-1">Цена (₽)</label>
                         <input @bind="_formPrice" type="number" step="0.01" min="0" placeholder="0.00"
                                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm
-                                      focus:outline-none focus:border-violet-500 transition" />
+                        focus:outline-none focus:border-violet-500 transition" />
                     </div>
                 </div>
 
@@ -281,8 +292,8 @@
                     <label class="block text-xs text-slate-400 mb-1">Фото</label>
                     <InputFile OnChange="OnPhotoSelected" accept="image/*"
                                class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4
-                                      file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-300
-                                      hover:file:bg-slate-700 transition" />
+                    file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-300
+                    hover:file:bg-slate-700 transition" />
                     @if (_editProduct?.PhotoUrl is not null && _photoStream is null)
                     {
                         <img src="@_editProduct.PhotoUrl" class="mt-2 h-16 rounded-lg object-cover" />
@@ -339,6 +350,7 @@
     decimal _formPrice;
     Stream? _photoStream;
     string? _photoName;
+    string? _photoContentType;
 
     string? _toast;
 
@@ -382,6 +394,7 @@
 
     void OpenCreateProduct()
     {
+        _photoStream?.Dispose();
         _editProduct = null;
         _formName = "";
         _formDescription = "";
@@ -389,12 +402,14 @@
         _formPrice = 0;
         _photoStream = null;
         _photoName = null;
+        _photoContentType = null;
         _modalError = null;
         _showProductModal = true;
     }
 
     void OpenEditProduct(ProductResponse p)
     {
+        _photoStream?.Dispose();
         _editProduct = p;
         _formName = p.Name;
         _formDescription = p.Description ?? "";
@@ -402,20 +417,42 @@
         _formPrice = p.Price;
         _photoStream = null;
         _photoName = null;
+        _photoContentType = null;
         _modalError = null;
         _showProductModal = true;
     }
 
-    void CloseProductModal() => _showProductModal = false;
+    void CloseProductModal()
+    {
+        _showProductModal = false;
+        _photoStream?.Dispose();
+        _photoStream = null;
+        _photoName = null;
+        _photoContentType = null;
+    }
 
     async Task OnPhotoSelected(InputFileChangeEventArgs e)
     {
         var file = e.File;
         _photoName = file.Name;
+        _photoContentType = file.ContentType;
+        _photoStream?.Dispose();
         var ms = new MemoryStream();
-        await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(ms);
-        ms.Position = 0;
-        _photoStream = ms;
+        try
+        {
+            await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).CopyToAsync(ms);
+            ms.Position = 0;
+            _photoStream = ms;
+            _modalError = null;
+        }
+        catch
+        {
+            ms.Dispose();
+            _photoStream = null;
+            _photoName = null;
+            _photoContentType = null;
+            _modalError = "Фото должно быть не больше 5 МБ.";
+        }
     }
 
     async Task SaveProduct()
@@ -423,6 +460,12 @@
         if (string.IsNullOrWhiteSpace(_formName))
         {
             _modalError = "Введите название товара.";
+            return;
+        }
+
+        if (_formPrice <= 0)
+        {
+            _modalError = "Цена должна быть больше нуля.";
             return;
         }
 
@@ -440,7 +483,7 @@
                 Category = _formCategory,
                 Price = _formPrice
             };
-            var created = await ProductSvc.CreateProductAsync(req, _photoStream, _photoName);
+            var created = await ProductSvc.CreateProductAsync(req, _photoStream, _photoName, _photoContentType);
             ok = created is not null;
         }
         else
@@ -452,14 +495,14 @@
                 Category = _formCategory,
                 Price = _formPrice
             };
-            ok = await ProductSvc.UpdateProductAsync(_editProduct.Id, req, _photoStream, _photoName);
+            ok = await ProductSvc.UpdateProductAsync(_editProduct.Id, req, _photoStream, _photoName, _photoContentType);
         }
 
         _modalLoading = false;
 
         if (ok)
         {
-            _showProductModal = false;
+            CloseProductModal();
             await LoadProducts();
             ShowToast(_editProduct is null ? "Товар создан" : "Товар обновлён");
         }
@@ -490,7 +533,14 @@
     void ShowToast(string msg)
     {
         _toast = msg;
-        _ = Task.Delay(3000).ContinueWith(_ => { _toast = null; InvokeAsync(StateHasChanged); });
+        _ = HideToastAsync();
+    }
+
+    async Task HideToastAsync()
+    {
+        await Task.Delay(3000);
+        _toast = null;
+        await InvokeAsync(StateHasChanged);
     }
 
     string TabCls(string t) =>

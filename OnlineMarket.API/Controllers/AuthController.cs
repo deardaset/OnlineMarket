@@ -18,6 +18,9 @@ namespace OnlineMarket.API.Controllers
         public async Task<IActionResult> Register([FromServices] IRegisterService service, [FromBody] OnlineMarketRegisterRequest request)
         {
             var result = await service.RunAsync(request);
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
             return Ok(result);
         }
 
@@ -25,6 +28,9 @@ namespace OnlineMarket.API.Controllers
         public async Task<IActionResult> Login([FromServices] ILoginService service, [FromBody] LoginRequest request)
         {
             var result = await service.RunAsync(request);
+            if (!result.Succeeded)
+                return Unauthorized();
+
             return Ok(result);
         }
 

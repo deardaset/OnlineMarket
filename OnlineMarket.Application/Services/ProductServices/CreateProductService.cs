@@ -1,7 +1,8 @@
 ﻿using AutoMapper;
 using OnlineMarket.Application.Interfaces.Product;
-using OnlineMarket.Core.Models;
+using OnlineMarket.Application.Mappings;
 using OnlineMarket.Core.Interfaces;
+using OnlineMarket.Core.Models;
 using OnlineMarket.SharedKernel.Contracts.Contracts.Requests.Product;
 using OnlineMarket.SharedKernel.Contracts.Contracts.Responses;
 using System;
@@ -15,13 +16,16 @@ namespace OnlineMarket.Application.Services.ProductServices
         public async Task<ProductResponse> RunAsync(CreateProductRequest request)
         {
             string? photoUrl = null;
-            if (request.Photo != null)
-                photoUrl = await storage.UploadAsync(request.Photo.OpenReadStream(), request.Photo.FileName, request.Photo.ContentType);
-            
+            if (request.Photo is not null)
+            {
+                using var stream = request.Photo.OpenReadStream();
+                photoUrl = await storage.UploadAsync(stream, request.Photo.FileName, request.Photo.ContentType);
+            }
+
             var product = new ProductModel
             {
-                Name = request.Name,
-                Description = request.Description,
+                Name = request.Name.Trim(),
+                Description = NormalizeOptionalText(request.Description),
                 Category = request.Category,
                 Price = request.Price,
                 PhotoUrl = photoUrl
@@ -29,15 +33,12 @@ namespace OnlineMarket.Application.Services.ProductServices
 
             await repository.CreateProductAsync(product);
 
-            return new ProductResponse
-            {
-                Id = product.Id,
-                Name = product.Name,
-                Description= product.Description,
-                Category= product.Category,
-                Price= product.Price,
-                PhotoUrl= product.PhotoUrl
-            };
+            return ResponseMapper.ToProductResponse(product);
+        }
+
+        private static string? NormalizeOptionalText(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
     }
 }

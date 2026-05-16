@@ -16,23 +16,13 @@ builder.Services.AddScoped(sp => new HttpClient(new CookieHandler
     BaseAddress = new Uri("https://localhost:7071/"),
 });
 
-// регистрируем конкретный класс
 builder.Services.AddScoped<CookieAuthStateProvider>();
-
-// говорим Blazor использовать его как стандартный провайдер
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<CookieAuthStateProvider>());
-
 builder.Services.AddAuthorizationCore();
 
-// Services
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<OrderService>();
 
 await builder.Build().RunAsync();
-
-
-
-
-

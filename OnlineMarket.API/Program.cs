@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OnlineMarket.API.Configurations;
 using OnlineMarket.Application.Validators.Product;
+using OnlineMarket.Core.Exceptions;
 using OnlineMarket.Infrastructure.Data;
 using OnlineMarket.Infrastructure.Mappings;
 using OnlineMarket.Infrastructure.Users;
@@ -20,6 +21,8 @@ CultureInfo.DefaultThreadCurrentUICulture = culture;
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddExceptionHandler<OnlineMarketExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 //AutoMapper
 builder.Services.AddAutoMapper(cfg =>
@@ -67,7 +70,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddCors(opts => {
     opts.AddPolicy("BlazorClient", policy => {
-        policy.WithOrigins("https://localhost:7080")
+        policy.WithOrigins("https://localhost:7080", "http://localhost:5293")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -106,10 +109,12 @@ using (var scope = app.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole(roleName));
         }
     }
-};
+}
+;
 
 app.UseHttpsRedirection();
 
+app.UseExceptionHandler();
 app.UseCors("BlazorClient");
 app.UseAuthentication();
 app.UseAuthorization();

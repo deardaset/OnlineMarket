@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace OnlineMarket.Core.Exceptions
 {
@@ -11,19 +8,23 @@ namespace OnlineMarket.Core.Exceptions
     {
         public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
         {
-            logger.LogError(exception, "Exception occured: {Message}", exception.Message);
-
-            var statuscode = exception switch
+            var statusCode = exception switch
             {
-                OnlineMarketException x => x.StatusCode,
+                OnlineMarketException onlineMarketException => onlineMarketException.StatusCode,
                 _ => StatusCodes.Status500InternalServerError
             };
-            httpContext.Response.StatusCode = statuscode;
+
+            if (statusCode >= StatusCodes.Status500InternalServerError)
+                logger.LogError(exception, "Exception occurred: {Message}", exception.Message);
+            else
+                logger.LogWarning(exception, "Request failed: {Message}", exception.Message);
+
+            httpContext.Response.StatusCode = statusCode;
 
             var error = new
             {
                 Id = Guid.NewGuid(),
-                StatusCode = statuscode,
+                StatusCode = statusCode,
                 ErrorMessage = exception.Message
             };
 

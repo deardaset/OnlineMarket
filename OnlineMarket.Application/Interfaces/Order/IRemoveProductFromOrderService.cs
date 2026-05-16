@@ -6,6 +6,6 @@ namespace OnlineMarket.Application.Interfaces.Order
 {
     public interface IRemoveProductFromOrderService
     {
-        public Task<bool> RunAsync(Guid orderId, Guid productId);
+        public Task<bool> RunAsync(Guid orderId, Guid productId, Guid userId, bool isAdmin);
     }
 }

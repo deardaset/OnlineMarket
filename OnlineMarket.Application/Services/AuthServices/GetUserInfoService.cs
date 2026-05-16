@@ -4,6 +4,7 @@ using OnlineMarket.Application.Interfaces.Auth;
 using OnlineMarket.Core.Exceptions;
 using OnlineMarket.Infrastructure.Users;
 using OnlineMarket.SharedKernel.Contracts.Contracts.Responses;
+using OnlineMarket.SharedKernel.Contracts.Enums;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -17,7 +18,7 @@ namespace OnlineMarket.Application.Services.AuthServices
         {
             var user = await userManager.GetUserAsync(principal);
             if (user is null)
-                throw new OnlineMarketUnauthorizedxception("Unauthorized");
+                throw new OnlineMarketUnauthorizedException("Unauthorized");
 
             var roles = await userManager.GetRolesAsync(user);
 
@@ -26,7 +27,7 @@ namespace OnlineMarket.Application.Services.AuthServices
                 Id = user.Id,
                 Email = user.Email,
                 UserName = user.UserName,
-                Role = roles.FirstOrDefault() ?? "User"
+                Role = roles.FirstOrDefault() ?? Roles.User.ToString()
             };
         }
     }

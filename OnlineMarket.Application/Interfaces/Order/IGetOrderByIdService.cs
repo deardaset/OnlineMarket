@@ -7,6 +7,6 @@ namespace OnlineMarket.Application.Interfaces.Order
 {
     public interface IGetOrderByIdService
     {
-        public Task<OrderResponse?> RunAsync(Guid guid);
+        public Task<OrderResponse> RunAsync(Guid guid, Guid userId, bool isAdmin);
     }
 }

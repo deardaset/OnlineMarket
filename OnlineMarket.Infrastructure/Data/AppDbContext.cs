@@ -19,18 +19,7 @@ namespace OnlineMarket.Infrastructure.Data
             base.OnModelCreating(builder);
             builder.ApplyConfiguration(new ProductMap());
             builder.ApplyConfiguration(new OrderMap());
-
-            builder.Entity<OrderProduct>()
-                .HasKey(op => new { op.OrderId, op.ProductId});
-
-            builder.Entity<OrderProduct>()
-                .HasOne(op => op.Order)
-                .WithMany(op => op.Products)
-                .HasForeignKey(op => op.OrderId);
-            builder.Entity<OrderProduct>()
-                .HasOne(op => op.Product)
-                .WithMany(op => op.Orders)
-                .HasForeignKey(op => op.ProductId);
+            builder.ApplyConfiguration(new OrderProductMap());
         }
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {

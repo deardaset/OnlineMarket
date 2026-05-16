@@ -1,4 +1,5 @@
 ﻿using OnlineMarket.Application.Interfaces.Order;
+using OnlineMarket.Application.Mappings;
 using OnlineMarket.Core.Exceptions;
 using OnlineMarket.Core.Interfaces;
 using OnlineMarket.SharedKernel.Contracts.Contracts.Responses;
@@ -10,32 +11,21 @@ namespace OnlineMarket.Application.Services.OrderServices
 {
     public class GetOrderByIdService(IOrderRepository repository) : IGetOrderByIdService
     {
-        public async Task<OrderResponse?> RunAsync(Guid guid)
+        public async Task<OrderResponse> RunAsync(Guid guid, Guid userId, bool isAdmin)
         {
             var order = await repository.GetOrderByIdAsync(guid);
-            if (order == null)
+            if (order is null)
                 throw new OnlineMarketNotFoundException("Order not found");
 
-            return new OrderResponse
-            {
-                Id = order.Id,
-                UserId = order.UserId,
-                Products = order.Products.Select(op => new OrderProductResponse
-                {
-                    OrderId = op.OrderId,
-                    ProductId = op.ProductId,
-                    Price = op.Price,
-                    Product = op.Product is null ? null! : new ProductResponse
-                    {
-                        Id = op.Product.Id,
-                        Name = op.Product.Name,
-                        Description = op.Product.Description,
-                        Category = op.Product.Category,
-                        Price = op.Product.Price,
-                        PhotoUrl = op.Product.PhotoUrl
-                    }
-                }).ToList()
-            };
+            EnsureCanAccess(order.UserId, userId, isAdmin);
+
+            return ResponseMapper.ToOrderResponse(order, includeProducts: true);
+        }
+
+        private static void EnsureCanAccess(Guid orderUserId, Guid userId, bool isAdmin)
+        {
+            if (!isAdmin && orderUserId != userId)
+                throw new OnlineMarketForbiddenException("Access denied");
         }
     }
 }

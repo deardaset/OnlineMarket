@@ -8,6 +8,6 @@ namespace OnlineMarket.Core.Models
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public Guid UserId { get; set; }
-        public List<OrderProductModel> Products { get; set; } = null!;
+        public List<OrderProductModel> Products { get; set; } = [];
     }
 }

@@ -7,6 +7,6 @@ namespace OnlineMarket.Application.Interfaces.Order
 {
     public interface IGetMyOrdersService
     {
-        Task<List<OrderResponse>> RunAsync(Guid userId);
+        public Task<List<OrderResponse>> RunAsync(Guid userId);
     }
 }

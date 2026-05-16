@@ -1,19 +1,22 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using OnlineMarket.Core.Models;
+using OnlineMarket.Core.Exceptions;
 using OnlineMarket.Core.Interfaces;
+using OnlineMarket.Core.Models;
 using OnlineMarket.Infrastructure.Data;
 using OnlineMarket.Infrastructure.Entities;
+using OnlineMarket.SharedKernel.Contracts.Contracts.Requests.Order;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using OnlineMarket.Core.Exceptions;
 
 namespace OnlineMarket.Infrastructure.Repositories
 {
     public class OrderRepository(AppDbContext context, IMapper mapper) : IOrderRepository
     {
+        private const int MaxPageSize = 100;
+
         public async Task CreateOrderAsync(OrderModel order)
         {
             await context.Orders.AddAsync(mapper.Map<Order>(order));
@@ -25,31 +28,37 @@ namespace OnlineMarket.Infrastructure.Repositories
             await context.Orders
                 .Where(o => o.Id == order.Id)
                 .ExecuteDeleteAsync();
-            await context.SaveChangesAsync();
         }
 
-        public async Task<(List<OrderModel>, int total)> GetAllOrderAsync()
+        public async Task<(List<OrderModel>, int total)> GetAllOrderAsync(GetAllOrdersParametersRequest request)
         {
+            var page = Math.Max(request.Page, 1);
+            var pageSize = Math.Clamp(request.PageSize, 1, MaxPageSize);
+
             var query = context.Orders
                 .AsNoTracking()
-                .Include(o => o.Products)
-                    .ThenInclude(op => op.Product);
+                .Include(order => order.Products)
+                    .ThenInclude(orderProduct => orderProduct.Product)
+                .OrderBy(order => order.Id);
 
             var total = await query.CountAsync();
 
-            var products = await query.ToListAsync();
+            var orders = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
 
-            return (mapper.Map<List<OrderModel>>(products), total);
-            //TODO: Pagination
+            return (mapper.Map<List<OrderModel>>(orders), total);
         }
 
         public async Task<List<OrderModel>> GetOrdersByUserIdAsync(Guid userId)
         {
             var orders = await context.Orders
                 .AsNoTracking()
-                .Include(o => o.Products)
-                    .ThenInclude(op => op.Product)
-                .Where(o => o.UserId == userId)
+                .Include(order => order.Products)
+                    .ThenInclude(orderProduct => orderProduct.Product)
+                .Where(order => order.UserId == userId)
+                .OrderBy(order => order.Id)
                 .ToListAsync();
 
             return mapper.Map<List<OrderModel>>(orders);
@@ -59,30 +68,30 @@ namespace OnlineMarket.Infrastructure.Repositories
         {
             var order = await context.Orders
                 .AsNoTracking()
-                .Include(o => o.Products)
-                    .ThenInclude(op => op.Product)
-                .FirstOrDefaultAsync(x => x.Id == guid);
-            return mapper.Map<OrderModel>(order);
+                .Include(order => order.Products)
+                    .ThenInclude(orderProduct => orderProduct.Product)
+                .FirstOrDefaultAsync(order => order.Id == guid);
+
+            return order is null ? null : mapper.Map<OrderModel>(order);
         }
 
         public async Task UpdateOrderAsync(OrderModel order)
         {
             var entity = await context.Orders.FindAsync(order.Id);
 
-            mapper.Map(order, entity);
+            entity!.UserId = order.UserId;
             await context.SaveChangesAsync();
         }
 
         public async Task<bool> AddProductToOrderAsync(Guid orderId, Guid productId)
         {
             var order = await context.Orders
-                .Include(o => o.Products)
-                .FirstOrDefaultAsync(o => o.Id == orderId);
+                .Include(order => order.Products)
+                .FirstOrDefaultAsync(order => order.Id == orderId);
 
-            var product = await context.Products
-                .FirstOrDefaultAsync(p => p.Id == productId);
+            var product = await context.Products.FirstOrDefaultAsync(product => product.Id == productId);
 
-            order.Products.Add(new OrderProduct
+            order!.Products.Add(new OrderProduct
             {
                 OrderId = orderId,
                 ProductId = productId,
@@ -92,16 +101,16 @@ namespace OnlineMarket.Infrastructure.Repositories
             await context.SaveChangesAsync();
             return true;
         }
+
         public async Task<bool> RemoveProductFromOrderAsync(Guid orderId, Guid productId)
         {
             var order = await context.Orders
-                .Include(o => o.Products)
-                .FirstOrDefaultAsync(o => o.Id == orderId);
+                .Include(order => order.Products)
+                .FirstOrDefaultAsync(order => order.Id == orderId);
 
-            var item = order?.Products.FirstOrDefault(op => op.ProductId == productId);
-            if (item is null) return false;
+            var item = order!.Products.FirstOrDefault(orderProduct => orderProduct.ProductId == productId);
 
-            order!.Products.Remove(item);
+            order.Products.Remove(item!);
             await context.SaveChangesAsync();
             return true;
         }

@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OnlineMarket.SharedKernel.Contracts\OnlineMarket.SharedKernel.Contracts.csproj" />
-    <ProjectReference Include="..\OnlineMarket.SharedKernel\OnlineMarket.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>

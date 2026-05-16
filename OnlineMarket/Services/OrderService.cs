@@ -5,45 +5,108 @@ namespace OnlineMarket.Client.Services;
 
 public class OrderService(HttpClient http)
 {
-    // ── User ───────────────────────────────────────────
-    public async Task<List<OrderResponse>?> GetMyOrdersAsync() =>
-        await http.GetFromJsonAsync<List<OrderResponse>>("api/order/my");
+    public async Task<List<OrderResponse>?> GetMyOrdersAsync()
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<List<OrderResponse>>("api/order/my");
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
-    public async Task<OrderResponse?> GetOrderAsync(Guid id) =>
-        await http.GetFromJsonAsync<OrderResponse>($"api/order/{id}");
+    public async Task<OrderResponse?> GetOrderAsync(Guid id)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<OrderResponse>($"api/order/{id}");
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
-    public async Task<OrderResponse?> CreateOrderAsync() =>
-        await http.PostAsJsonAsync("api/order", new { })
-            .ContinueWith(t => t.Result.IsSuccessStatusCode
-                ? t.Result.Content.ReadFromJsonAsync<OrderResponse>().Result
-                : null);
+    public async Task<OrderResponse?> CreateOrderAsync()
+    {
+        try
+        {
+            var response = await http.PostAsJsonAsync("api/order", new { });
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            return await response.Content.ReadFromJsonAsync<OrderResponse>();
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public async Task<bool> AddProductToOrderAsync(Guid orderId, Guid productId)
     {
-        var resp = await http.PostAsync($"api/order/{orderId}/product/{productId}", null);
-        return resp.IsSuccessStatusCode;
+        try
+        {
+            var response = await http.PostAsync($"api/order/{orderId}/product/{productId}", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public async Task<bool> RemoveProductFromOrderAsync(Guid orderId, Guid productId)
     {
-        var resp = await http.DeleteAsync($"api/order/{orderId}/product/{productId}");
-        return resp.IsSuccessStatusCode;
+        try
+        {
+            var response = await http.DeleteAsync($"api/order/{orderId}/product/{productId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public async Task<bool> CancelOrderAsync(Guid orderId)
     {
-        var resp = await http.DeleteAsync($"api/order/{orderId}");
-        return resp.IsSuccessStatusCode;
+        try
+        {
+            var response = await http.DeleteAsync($"api/order/{orderId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
-    // ── Admin ──────────────────────────────────────────
-    public async Task<PagedResponse<OrderResponse>?> GetAllOrdersAsync(int page = 1, int pageSize = 20) =>
-        await http.GetFromJsonAsync<PagedResponse<OrderResponse>>(
-            $"api/order?page={page}&pageSize={pageSize}");
+    public async Task<PagedResponse<OrderResponse>?> GetAllOrdersAsync(int page = 1, int pageSize = 20)
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<PagedResponse<OrderResponse>>(
+                $"api/order?page={page}&pageSize={pageSize}");
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public async Task<bool> DeleteOrderAsync(Guid orderId)
     {
-        var resp = await http.DeleteAsync($"api/order/{orderId}");
-        return resp.IsSuccessStatusCode;
+        try
+        {
+            var response = await http.DeleteAsync($"api/order/{orderId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

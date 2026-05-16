@@ -6,7 +6,7 @@ namespace OnlineMarket.SharedKernel.Contracts.Contracts.Responses
 {
     public class PagedResponse<T>
     {
-        public List<T> Items { get; set; } = null!;
+        public List<T> Items { get; set; } = [];
         public int TotalCount { get; set; }
     }
 }

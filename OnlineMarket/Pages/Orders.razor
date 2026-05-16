@@ -34,6 +34,10 @@ else if (_orders?.Count == 0)
         <a href="/products" class="text-violet-400 hover:underline text-sm">Перейти в каталог →</a>
     </div>
 }
+else if (_orders is null)
+{
+    <p class="text-center text-red-300 mt-24">Не удалось загрузить заказы.</p>
+}
 else
 {
     <div class="space-y-4">

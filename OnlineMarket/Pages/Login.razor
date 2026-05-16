@@ -48,6 +48,8 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
     string _email = "";
     string _password = "";
     string? _error;
@@ -58,7 +60,15 @@
         _loading = true; _error = null;
         var ok = await AuthSvc.LoginAsync(new LoginRequest { Email = _email, Password = _password });
         _loading = false;
-        if (ok) Nav.NavigateTo("/products");
+        if (ok) Nav.NavigateTo(GetSafeReturnUrl());
         else _error = "Неверный email или пароль.";
+    }
+
+    string GetSafeReturnUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl) || Uri.TryCreate(ReturnUrl, UriKind.Absolute, out _))
+            return "/products";
+
+        return ReturnUrl.StartsWith('/') ? ReturnUrl : $"/{ReturnUrl}";
     }
 }

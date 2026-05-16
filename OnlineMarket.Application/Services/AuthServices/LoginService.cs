@@ -13,8 +13,11 @@ namespace OnlineMarket.Application.Services.AuthServices
     {
         public async Task<SignInResult> RunAsync(LoginRequest request)
         {
-            var result = await signInManager.PasswordSignInAsync(request.Email, request.Password, isPersistent: true, lockoutOnFailure: false);
-            return result;
+            return await signInManager.PasswordSignInAsync(
+                request.Email.Trim(),
+                request.Password,
+                isPersistent: true,
+                lockoutOnFailure: false);
         }
     }
 }

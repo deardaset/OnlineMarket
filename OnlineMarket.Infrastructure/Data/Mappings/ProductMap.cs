@@ -11,11 +11,20 @@ namespace OnlineMarket.Infrastructure.Data.Mappings
     {
         public void Configure(EntityTypeBuilder<Product> builder)
         {
-            builder.ToTable("Products").HasKey(p => p.Id);
+            builder.ToTable("Products").HasKey(product => product.Id);
 
-            builder.Property(p => p.Name)
+            builder.Property(product => product.Name)
                 .HasMaxLength(100)
                 .IsRequired();
+
+            builder.Property(product => product.Description)
+                .HasMaxLength(1000);
+
+            builder.Property(product => product.Price)
+                .HasPrecision(18, 2);
+
+            builder.Property(product => product.PhotoUrl)
+                .HasMaxLength(2048);
         }
     }
 }

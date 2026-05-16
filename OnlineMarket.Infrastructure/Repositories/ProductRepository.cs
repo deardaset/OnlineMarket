@@ -2,6 +2,7 @@
 using Amazon.S3.Model.Internal.MarshallTransformations;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using OnlineMarket.Core.Exceptions;
 using OnlineMarket.Core.Interfaces;
 using OnlineMarket.Core.Models;
 using OnlineMarket.Infrastructure.Data;
@@ -16,6 +17,8 @@ namespace OnlineMarket.Infrastructure.Repositories
 {
     public class ProductRepository(AppDbContext context, IMapper mapper) : IProductRepository
     {
+        private const int MaxPageSize = 100;
+
         public async Task CreateProductAsync(ProductModel product)
         {
             await context.Products.AddAsync(mapper.Map<Product>(product));
@@ -27,20 +30,20 @@ namespace OnlineMarket.Infrastructure.Repositories
             await context.Products
                 .Where(p => p.Id == product.Id)
                 .ExecuteDeleteAsync();
-            await context.SaveChangesAsync();
         }
 
         public async Task<(List<ProductModel>, int total)> GetAllProductsAsync(GetAllProductsParametersRequest request)
         {
-            var query = context.Products.AsNoTracking();
+            var page = Math.Max(request.Page, 1);
+            var pageSize = Math.Clamp(request.PageSize, 1, MaxPageSize);
 
-            query = ApplyFilters(query, request);
-            
+            var query = ApplyFilters(context.Products.AsNoTracking(), request);
+
             var total = await query.CountAsync();
 
             var products = await query
-                .Skip((request.Page - 1) * request.PageSize)
-                .Take(request.PageSize)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             return (mapper.Map<List<ProductModel>>(products), total);
@@ -48,42 +51,52 @@ namespace OnlineMarket.Infrastructure.Repositories
 
         public async Task<ProductModel?> GetProductByIdAsync(Guid guid)
         {
-            var product = await context.Products.FirstOrDefaultAsync(x => x.Id == guid);
-            return mapper.Map<ProductModel>(product);
+            var product = await context.Products
+                .AsNoTracking()
+                .Include(product => product.Orders)
+                    .ThenInclude(orderProduct => orderProduct.Order)
+                .FirstOrDefaultAsync(product => product.Id == guid);
+
+            return product is null ? null : mapper.Map<ProductModel>(product);
         }
 
         public async Task UpdateProductAsync(ProductModel product)
         {
             var entity = await context.Products.FindAsync(product.Id);
 
-            mapper.Map(product, entity);
+            entity.Name = product.Name;
+            entity.Description = product.Description;
+            entity.Category = product.Category;
+            entity.Price = product.Price;
+            entity.PhotoUrl = product.PhotoUrl;
+
             await context.SaveChangesAsync();
         }
 
         private static IQueryable<Product> ApplyFilters(IQueryable<Product> query, GetAllProductsParametersRequest request)
         {
-            if (!string.IsNullOrEmpty(request.Search))
+            if (!string.IsNullOrWhiteSpace(request.Search))
             {
                 var term = $"%{request.Search.Trim()}%";
-
-                query = query.Where(b =>
-                    EF.Functions.ILike(b.Name, term)
-                );
+                query = query.Where(product =>
+                    EF.Functions.ILike(product.Name, term)
+                    || (product.Description != null && EF.Functions.ILike(product.Description, term)));
             }
 
-            if (!string.IsNullOrEmpty(request.Category) && Enum.TryParse<ProductCategory>(request.Category, ignoreCase: true, out var parsedElement))
+            if (!string.IsNullOrWhiteSpace(request.Category)
+                && Enum.TryParse<ProductCategory>(request.Category, ignoreCase: true, out var category))
             {
-                query = query.Where(b => b.Category == parsedElement);
+                query = query.Where(product => product.Category == category);
             }
 
-            query = request.Sort?.ToLower() switch
+            return request.Sort?.Trim().ToLowerInvariant() switch
             {
-                "name" => query.OrderBy(b => b.Name),
-                "rarity" => query.OrderBy(b => b.Category),
-                _ => query
+                "name" => query.OrderBy(product => product.Name),
+                "price" => query.OrderBy(product => product.Price),
+                "-price" => query.OrderByDescending(product => product.Price),
+                "category" => query.OrderBy(product => product.Category).ThenBy(product => product.Name),
+                _ => query.OrderBy(product => product.Name)
             };
-
-            return query;
         }
     }
 }
