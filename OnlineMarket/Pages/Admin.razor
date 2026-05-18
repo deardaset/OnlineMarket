@@ -1,0 +1,562 @@
+﻿@page "/admin"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject ProductService ProductSvc
+@inject OrderService OrderSvc
+@inject NavigationManager Nav
+
+<PageTitle>Админ-панель — OnlineMarket</PageTitle>
+
+<!-- Header -->
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <h1 class="text-3xl font-bold">Админ-панель</h1>
+        <p class="text-slate-400 text-sm mt-1">Управление магазином</p>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="flex gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 mb-8 w-fit">
+    <button @onclick='() => SetTab("products")'
+            class="@TabCls("products")">
+        🛍 Товары
+    </button>
+    <button @onclick='() => SetTab("orders")'
+            class="@TabCls("orders")">
+        📦 Заказы
+    </button>
+</div>
+
+<!-- ═══════════ PRODUCTS TAB ═══════════ -->
+@if (_tab == "products")
+{
+    <div class="flex items-center justify-between mb-5">
+        <h2 class="text-xl font-semibold">Товары</h2>
+        <button @onclick="OpenCreateProduct"
+                class="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-lg text-sm font-medium transition">
+            + Добавить товар
+        </button>
+    </div>
+
+    @if (_productsLoading)
+    {
+        <div class="space-y-3">
+            @for (int i = 0; i < 5; i++)
+            {
+                <div class="bg-slate-800 h-16 rounded-xl animate-pulse"></div>
+            }
+        </div>
+    }
+    else if (_products?.Items.Count == 0)
+    {
+        <p class="text-slate-400 text-center mt-12">Товаров нет.</p>
+    }
+    else if (_products is null)
+    {
+        <p class="text-red-300 text-center mt-12">Не удалось загрузить товары.</p>
+    }
+    else
+    {
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider">
+                        <th class="px-5 py-3 text-left">Фото</th>
+                        <th class="px-5 py-3 text-left">Название</th>
+                        <th class="px-5 py-3 text-left">Категория</th>
+                        <th class="px-5 py-3 text-right">Цена</th>
+                        <th class="px-5 py-3 text-right">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _products!.Items)
+                    {
+                        <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 transition">
+                            <td class="px-5 py-3">
+                                @if (p.PhotoUrl is not null)
+                                {
+                                    <img src="@p.PhotoUrl" class="w-10 h-10 rounded-lg object-cover" />
+                                }
+                                else
+                                {
+                                    <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500">🛍</div>
+                                }
+                            </td>
+                            <td class="px-5 py-3 font-medium">
+                                <div>@p.Name</div>
+                                @if (p.Description is not null)
+                                {
+                                    <div class="text-slate-500 text-xs line-clamp-1 mt-0.5">@p.Description</div>
+                                }
+                            </td>
+                            <td class="px-5 py-3">
+                                <span class="px-2 py-0.5 bg-slate-800 rounded-md text-xs text-violet-400">
+                                    @CategoryLabel(p.Category)
+                                </span>
+                            </td>
+                            <td class="px-5 py-3 text-right font-semibold">@p.Price.ToString("C")</td>
+                            <td class="px-5 py-3 text-right">
+                                <div class="flex justify-end gap-2">
+                                    <button @onclick="() => OpenEditProduct(p)"
+                                            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs transition">
+                                        Изменить
+                                    </button>
+                                    <button @onclick="() => DeleteProduct(p.Id)"
+                                            class="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded-lg text-xs transition">
+                                        Удалить
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Products pagination -->
+        @if (_products!.TotalCount > _productPageSize)
+        {
+            <div class="flex justify-center gap-3 mt-6">
+                <button @onclick="PrevProductPage" disabled="@(_productPage == 1)"
+                        class="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-40 hover:bg-slate-700 transition">
+                    ← Назад
+                </button>
+                <span class="px-4 py-2 text-slate-400 text-sm">
+                    Стр. @_productPage / @((_products.TotalCount + _productPageSize - 1) / _productPageSize)
+                </span>
+                <button @onclick="NextProductPage" disabled="@(_productPage * _productPageSize >= _products.TotalCount)"
+                        class="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-40 hover:bg-slate-700 transition">
+                    Вперёд →
+                </button>
+            </div>
+        }
+    }
+}
+
+<!-- ═══════════ ORDERS TAB ═══════════ -->
+@if (_tab == "orders")
+{
+    <div class="flex items-center justify-between mb-5">
+        <h2 class="text-xl font-semibold">Все заказы</h2>
+        <span class="text-sm text-slate-400">Всего: @(_orders?.TotalCount ?? 0)</span>
+    </div>
+
+    @if (_ordersLoading)
+    {
+        <div class="space-y-3">
+            @for (int i = 0; i < 5; i++)
+            {
+                <div class="bg-slate-800 h-20 rounded-xl animate-pulse"></div>
+            }
+        </div>
+    }
+    else if (_orders?.Items.Count == 0)
+    {
+        <p class="text-slate-400 text-center mt-12">Заказов нет.</p>
+    }
+    else if (_orders is null)
+    {
+        <p class="text-red-300 text-center mt-12">Не удалось загрузить заказы.</p>
+    }
+    else
+    {
+        <div class="space-y-4">
+            @foreach (var o in _orders!.Items)
+            {
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="text-xs text-slate-500 font-mono">@o.Id</p>
+                            <p class="text-sm text-slate-300 mt-0.5">
+                                @o.Products.Count
+                                @(o.Products.Count == 1 ? "товар" : o.Products.Count is 2 or 3 or 4 ? "товара" : "товаров")
+                                · Итого: <span class="text-white font-semibold">@(o.Products.Sum(op => op.Price).ToString("C"))</span>
+                            </p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @onclick="@(() => Nav.NavigateTo($"/orders/{o.Id}"))"
+                                    class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs transition">
+                                Подробнее
+                            </button>
+                            <button @onclick="() => DeleteOrder(o.Id)"
+                                    class="px-3 py-1.5 bg-red-950 hover:bg-red-900 text-red-400 rounded-lg text-xs transition">
+                                Удалить
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (o.Products.Count > 0)
+                    {
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            @foreach (var op in o.Products.Take(5))
+                            {
+                                var p = op.Product;
+                                <div class="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5">
+                                    @if (p?.PhotoUrl is not null)
+                                    {
+                                        <img src="@p.PhotoUrl" class="w-5 h-5 rounded object-cover" />
+                                    }
+                                    <span class="text-xs text-slate-300">@(p?.Name ?? "—")</span>
+                                    <span class="text-xs text-violet-400">@op.Price.ToString("C")</span>
+                                </div>
+                            }
+                            @if (o.Products.Count > 5)
+                            {
+                                <div class="bg-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-400">
+                                    +@(o.Products.Count - 5) ещё
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Orders pagination -->
+        @if (_orders!.TotalCount > _orderPageSize)
+        {
+            <div class="flex justify-center gap-3 mt-6">
+                <button @onclick="PrevOrderPage" disabled="@(_orderPage == 1)"
+                        class="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-40 hover:bg-slate-700 transition">
+                    ← Назад
+                </button>
+                <span class="px-4 py-2 text-slate-400 text-sm">
+                    Стр. @_orderPage / @((_orders.TotalCount + _orderPageSize - 1) / _orderPageSize)
+                </span>
+                <button @onclick="NextOrderPage" disabled="@(_orderPage * _orderPageSize >= _orders.TotalCount)"
+                        class="px-4 py-2 bg-slate-800 rounded-lg disabled:opacity-40 hover:bg-slate-700 transition">
+                    Вперёд →
+                </button>
+            </div>
+        }
+    }
+}
+
+<!-- ═══════════ PRODUCT MODAL ═══════════ -->
+@if (_showProductModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+         @onclick="CloseProductModal">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-7 w-full max-w-lg shadow-2xl"
+             @onclick:stopPropagation>
+
+            <h2 class="text-xl font-bold mb-5">
+                @(_editProduct is null ? "Добавить товар" : "Редактировать товар")
+            </h2>
+
+            @if (_modalError is not null)
+            {
+                <div class="mb-4 px-4 py-3 bg-red-950 border border-red-800 rounded-lg text-red-300 text-sm">
+                    @_modalError
+                </div>
+            }
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Название</label>
+                    <input @bind="_formName" placeholder="Название товара"
+                           class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm
+                    focus:outline-none focus:border-violet-500 transition" />
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Описание</label>
+                    <textarea @bind="_formDescription" rows="3" placeholder="Описание (необязательно)"
+                              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm
+                        focus:outline-none focus:border-violet-500 transition resize-none">
+                    </textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Категория</label>
+                        <select @bind="_formCategory"
+                                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm
+                            focus:outline-none focus:border-violet-500 transition">
+                            @foreach (var cat in Enum.GetValues<ProductCategory>())
+                            {
+                                <option value="@cat">@CategoryLabel(cat)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Цена (₽)</label>
+                        <input @bind="_formPrice" type="number" step="0.01" min="0" placeholder="0.00"
+                               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-sm
+                        focus:outline-none focus:border-violet-500 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Фото</label>
+                    <InputFile OnChange="OnPhotoSelected" accept="image/*"
+                               class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4
+                    file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-300
+                    hover:file:bg-slate-700 transition" />
+                    @if (_editProduct?.PhotoUrl is not null && _photoStream is null)
+                    {
+                        <img src="@_editProduct.PhotoUrl" class="mt-2 h-16 rounded-lg object-cover" />
+                    }
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button @onclick="CloseProductModal"
+                        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm transition">
+                    Отмена
+                </button>
+                <button @onclick="SaveProduct" disabled="@_modalLoading"
+                        class="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-lg text-sm font-medium transition">
+                    @(_modalLoading ? "Сохранение..." : (_editProduct is null ? "Создать" : "Сохранить"))
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Toast -->
+@if (_toast is not null)
+{
+    <div class="fixed bottom-6 right-6 bg-violet-700 text-white px-5 py-3 rounded-xl shadow-xl text-sm animate-fade-in z-50">
+        @_toast
+    </div>
+}
+
+@code {
+    string _tab = "products";
+
+    // ── Products ──────────────────────────────────────
+    PagedResponse<ProductResponse>? _products;
+    bool _productsLoading = true;
+    int _productPage = 1;
+    int _productPageSize = 15;
+
+    // ── Orders ────────────────────────────────────────
+    PagedResponse<OrderResponse>? _orders;
+    bool _ordersLoading = true;
+    int _orderPage = 1;
+    int _orderPageSize = 20;
+
+    // ── Modal ─────────────────────────────────────────
+    bool _showProductModal;
+    bool _modalLoading;
+    string? _modalError;
+    ProductResponse? _editProduct;
+
+    string _formName = "";
+    string _formDescription = "";
+    ProductCategory _formCategory = ProductCategory.Food;
+    decimal _formPrice;
+    Stream? _photoStream;
+    string? _photoName;
+    string? _photoContentType;
+
+    string? _toast;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadProducts(), LoadOrders());
+    }
+
+    async Task SetTab(string tab)
+    {
+        _tab = tab;
+        if (tab == "products" && _products is null) await LoadProducts();
+        if (tab == "orders" && _orders is null) await LoadOrders();
+    }
+
+    // ── Products load ─────────────────────────────────
+
+    async Task LoadProducts()
+    {
+        _productsLoading = true;
+        _products = await ProductSvc.GetProductsAsync(_productPage, _productPageSize);
+        _productsLoading = false;
+    }
+
+    async Task PrevProductPage() { _productPage--; await LoadProducts(); }
+    async Task NextProductPage() { _productPage++; await LoadProducts(); }
+
+    // ── Orders load ───────────────────────────────────
+
+    async Task LoadOrders()
+    {
+        _ordersLoading = true;
+        _orders = await OrderSvc.GetAllOrdersAsync(_orderPage, _orderPageSize);
+        _ordersLoading = false;
+    }
+
+    async Task PrevOrderPage() { _orderPage--; await LoadOrders(); }
+    async Task NextOrderPage() { _orderPage++; await LoadOrders(); }
+
+    // ── Product CRUD ──────────────────────────────────
+
+    void OpenCreateProduct()
+    {
+        _photoStream?.Dispose();
+        _editProduct = null;
+        _formName = "";
+        _formDescription = "";
+        _formCategory = ProductCategory.Food;
+        _formPrice = 0;
+        _photoStream = null;
+        _photoName = null;
+        _photoContentType = null;
+        _modalError = null;
+        _showProductModal = true;
+    }
+
+    void OpenEditProduct(ProductResponse p)
+    {
+        _photoStream?.Dispose();
+        _editProduct = p;
+        _formName = p.Name;
+        _formDescription = p.Description ?? "";
+        _formCategory = p.Category;
+        _formPrice = p.Price;
+        _photoStream = null;
+        _photoName = null;
+        _photoContentType = null;
+        _modalError = null;
+        _showProductModal = true;
+    }
+
+    void CloseProductModal()
+    {
+        _showProductModal = false;
+        _photoStream?.Dispose();
+        _photoStream = null;
+        _photoName = null;
+        _photoContentType = null;
+    }
+
+    async Task OnPhotoSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        _photoName = file.Name;
+        _photoContentType = file.ContentType;
+        _photoStream?.Dispose();
+        var ms = new MemoryStream();
+        try
+        {
+            await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).CopyToAsync(ms);
+            ms.Position = 0;
+            _photoStream = ms;
+            _modalError = null;
+        }
+        catch
+        {
+            ms.Dispose();
+            _photoStream = null;
+            _photoName = null;
+            _photoContentType = null;
+            _modalError = "Фото должно быть не больше 5 МБ.";
+        }
+    }
+
+    async Task SaveProduct()
+    {
+        if (string.IsNullOrWhiteSpace(_formName))
+        {
+            _modalError = "Введите название товара.";
+            return;
+        }
+
+        if (_formPrice <= 0)
+        {
+            _modalError = "Цена должна быть больше нуля.";
+            return;
+        }
+
+        _modalLoading = true;
+        _modalError = null;
+
+        bool ok;
+
+        if (_editProduct is null)
+        {
+            var req = new CreateProductRequest
+            {
+                Name = _formName,
+                Description = string.IsNullOrWhiteSpace(_formDescription) ? null : _formDescription,
+                Category = _formCategory,
+                Price = _formPrice
+            };
+            var created = await ProductSvc.CreateProductAsync(req, _photoStream, _photoName, _photoContentType);
+            ok = created is not null;
+        }
+        else
+        {
+            var req = new UpdateProductRequest
+            {
+                Name = _formName,
+                Description = string.IsNullOrWhiteSpace(_formDescription) ? null : _formDescription,
+                Category = _formCategory,
+                Price = _formPrice
+            };
+            ok = await ProductSvc.UpdateProductAsync(_editProduct.Id, req, _photoStream, _photoName, _photoContentType);
+        }
+
+        _modalLoading = false;
+
+        if (ok)
+        {
+            CloseProductModal();
+            await LoadProducts();
+            ShowToast(_editProduct is null ? "Товар создан" : "Товар обновлён");
+        }
+        else
+        {
+            _modalError = "Ошибка сохранения. Попробуйте ещё раз.";
+        }
+    }
+
+    async Task DeleteProduct(Guid id)
+    {
+        var ok = await ProductSvc.DeleteProductAsync(id);
+        if (ok) { await LoadProducts(); ShowToast("Товар удалён"); }
+        else ShowToast("Не удалось удалить товар");
+    }
+
+    // ── Orders CRUD ───────────────────────────────────
+
+    async Task DeleteOrder(Guid id)
+    {
+        var ok = await OrderSvc.DeleteOrderAsync(id);
+        if (ok) { await LoadOrders(); ShowToast("Заказ удалён"); }
+        else ShowToast("Не удалось удалить заказ");
+    }
+
+    // ── Helpers ───────────────────────────────────────
+
+    void ShowToast(string msg)
+    {
+        _toast = msg;
+        _ = HideToastAsync();
+    }
+
+    async Task HideToastAsync()
+    {
+        await Task.Delay(3000);
+        _toast = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    string TabCls(string t) =>
+        _tab == t
+            ? "px-5 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium transition"
+            : "px-5 py-2 text-slate-400 hover:text-white rounded-lg text-sm transition";
+
+    static string CategoryLabel(ProductCategory c) => c switch
+    {
+        ProductCategory.Food => "Еда",
+        ProductCategory.Grocery => "Садоводство",
+        ProductCategory.Drinks => "Напитки",
+        ProductCategory.HouseHold => "Бытовая химия",
+        ProductCategory.PersonalCare => "Средства ухода",
+        ProductCategory.BabyProducts => "Товары для детей",
+        ProductCategory.Medicine => "Медикаменты",
+        _ => c.ToString()
+    };
+}

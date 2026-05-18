@@ -1,4 +1,4 @@
-﻿using OnlineMarket.Core.Entities;
+﻿using OnlineMarket.Core.Models;
 using OnlineMarket.SharedKernel.Contracts.Contracts.Responses;
 using System;
 using System.Collections.Generic;
@@ -8,6 +8,6 @@ namespace OnlineMarket.Application.Interfaces.Order
 {
     public interface ICreateOrderService
     {
-        public Task<OrderResponse> RunAsync();
+        public Task<OrderResponse> RunAsync(Guid userId);
     }
 }

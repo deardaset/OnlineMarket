@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using OnlineMarket.Core.Entities;
+using OnlineMarket.Core.Models;
 using OnlineMarket.SharedKernel.Contracts.Contracts.Responses;
 using System;
 using System.Collections.Generic;

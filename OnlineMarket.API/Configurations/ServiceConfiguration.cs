@@ -1,4 +1,6 @@
-﻿using OnlineMarket.Application.Services.Product;
+﻿using OnlineMarket.Application.Interfaces.Product;
+using OnlineMarket.Application.Services.AuthServices;
+using OnlineMarket.Application.Services.ProductServices;
 using OnlineMarket.Core.Interfaces;
 using OnlineMarket.Infrastructure.Repositories;
 
@@ -11,15 +13,14 @@ namespace OnlineMarket.API.Configurations
             services.Scan(scan => scan
                 .FromAssemblies(
                     typeof(ProductRepository).Assembly,
-                    typeof(CreateProductService).Assembly
-                )
-                .AddClasses(classes => classes.InNamespaces(
-                    "OnlineMarket.Application.Services",
-                    "OnlineMarket.Infrastructure.Repositories"
-                ))
+                    typeof(CreateProductService).Assembly)
+                .AddClasses(classes => classes.Where(type =>
+                    type.Namespace is not null
+                    && (type.Namespace.StartsWith("OnlineMarket.Application.Services", StringComparison.Ordinal)
+                        || type.Namespace.StartsWith("OnlineMarket.Infrastructure.Repositories", StringComparison.Ordinal))
+                    && type != typeof(StorageService)))
                 .AsMatchingInterface()
-                .WithScopedLifetime()
-            );
+                .WithScopedLifetime());
 
             services.AddSingleton<IStorageService, StorageService>();
 

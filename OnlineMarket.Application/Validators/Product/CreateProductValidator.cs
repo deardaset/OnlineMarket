@@ -8,6 +8,9 @@ namespace OnlineMarket.Application.Validators.Product
 {
     public class CreateProductValidator : AbstractValidator<CreateProductRequest>
     {
+        private static readonly string[] AllowedExtensions = [".jpg", ".jpeg", ".png", ".webp"];
+        private static readonly string[] AllowedContentTypes = ["image/jpeg", "image/png", "image/webp"];
+
         public CreateProductValidator()
         {
             RuleFor(x => x.Name)
@@ -26,13 +29,13 @@ namespace OnlineMarket.Application.Validators.Product
                 .PrecisionScale(10, 2, false).WithMessage("Max 2 decimal places");
 
             RuleFor(x => x.Photo)
-                .Must(file => file!.Length <= 5 * 1024 * 1024).WithMessage("File size must be under 5MB")
-                .Must(file =>
-                {
-                    var allowed = new[] { ".jpg", ".jpeg", ".png" };
-                    var ext = Path.GetExtension(file.FileName).ToLower();
-                    return allowed.Contains(ext);
-                }).WithMessage("Allowed extensions: .jpg, .jpeg, .png");
+                .Must(file => file is not null && file.Length > 0).WithMessage("File must not be empty")
+                .Must(file => file is not null && file.Length <= 5 * 1024 * 1024).WithMessage("File size must be under 5MB")
+                .Must(file => file is not null && AllowedExtensions.Contains(Path.GetExtension(file.FileName).ToLowerInvariant()))
+                .WithMessage("Allowed extensions: .jpg, .jpeg, .png, .webp")
+                .Must(file => file is not null && AllowedContentTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
+                .WithMessage("Allowed content types: image/jpeg, image/png, image/webp")
+                .When(x => x.Photo is not null);
         }
     }
 }

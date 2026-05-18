@@ -1,34 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="ru">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OnlineMarket</title>
     <base href="/" />
-    <link rel="preload" id="webassembly" />
-    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="css/app.css" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#020617" />
+    <meta name="description" content="OnlineMarket - интернет-магазин" />
+
     <link rel="icon" type="image/png" href="favicon.png" />
-    <link href="OnlineMarket.styles.css" rel="stylesheet" />
-    <script type="importmap"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: tailwind.colors.slate,
+                        violet: tailwind.colors.violet,
+                        indigo: tailwind.colors.indigo
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in .25s ease-out;
+        }
+
+        html,
+        body {
+            background: #020617;
+        }
+
+        #app-loader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #020617;
+            color: #a78bfa;
+            font-family: system-ui, sans-serif;
+            z-index: 9999;
+        }
+    </style>
 </head>
 
 <body>
-    <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+    <div id="app-loader">
+        <div class="text-center">
+            <div class="text-3xl font-bold mb-3">OnlineMarket</div>
+            <div class="text-sm text-slate-400">Загрузка приложения...</div>
+        </div>
     </div>
 
-    <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="." class="reload">Reload</a>
-        <span class="dismiss">🗙</span>
+    <div id="app"></div>
+
+    <div id="blazor-error-ui" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2
+         bg-red-600 text-white px-6 py-3 rounded-xl shadow-xl">
+        Произошла ошибка.
+        <a href="" class="underline ml-2">Обновить</a>
     </div>
-    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script>
+        window.addEventListener("load", () => {
+            const loader = document.getElementById("app-loader");
+            setTimeout(() => loader?.remove(), 300);
+        });
+    </script>
 </body>
-
 </html>

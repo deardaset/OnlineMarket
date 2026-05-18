@@ -1,4 +1,5 @@
-﻿using OnlineMarket.SharedKernel.Contracts.Contracts.Responses;
+﻿using OnlineMarket.SharedKernel.Contracts.Contracts.Requests.Order;
+using OnlineMarket.SharedKernel.Contracts.Contracts.Responses;
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
@@ -8,6 +9,6 @@ namespace OnlineMarket.Application.Interfaces.Order
 {
     public interface IGetAllOrdersService
     {
-        public Task<PagedResponse<OrderResponse>> RunAsync();
+        public Task<PagedResponse<OrderResponse>> RunAsync(GetAllOrdersParametersRequest request);
     }
 }

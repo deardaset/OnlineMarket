@@ -6,6 +6,6 @@ namespace OnlineMarket.Application.Interfaces.Order
 {
     public interface IDeleteOrderService
     {
-        public Task RunAsync(Guid guid);
+        public Task RunAsync(Guid guid, Guid userId, bool isAdmin);
     }
 }

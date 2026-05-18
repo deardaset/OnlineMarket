@@ -13,7 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="..\OnlineMarket.Core\OnlineMarket.Core.csproj" />
     <ProjectReference Include="..\OnlineMarket.Infrastructure\OnlineMarket.Infrastructure.csproj" />
-    <ProjectReference Include="..\OnlineMarket.SharedKernel\OnlineMarket.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>

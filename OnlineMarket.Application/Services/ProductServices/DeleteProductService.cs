@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace OnlineMarket.Application.Services.Product
+namespace OnlineMarket.Application.Services.ProductServices
 {
     public class DeleteProductService(IProductRepository repository, IStorageService storage) : IDeleteProductService
     {
@@ -14,7 +14,7 @@ namespace OnlineMarket.Application.Services.Product
         {
             var product = await repository.GetProductByIdAsync(guid);
 
-            if (product == null)
+            if (product is null)
                 throw new OnlineMarketNotFoundException("Product not found");
 
             if (!string.IsNullOrEmpty(product.PhotoUrl))

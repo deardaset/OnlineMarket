@@ -1,16 +1,78 @@
 ﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+@inject AuthService AuthSvc
+@inject NavigationManager Nav
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+
+    <!-- NAV -->
+    <nav class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+
+            <!-- Logo -->
+            <a href="/" class="flex items-center gap-2 font-bold text-xl tracking-tight">
+                <span class="bg-gradient-to-r from-violet-500 to-indigo-500 bg-clip-text text-transparent">
+                    OnlineMarket
+                </span>
+            </a>
+
+            <!-- Links -->
+            <div class="flex items-center gap-6 text-sm font-medium">
+                <NavLink href="/products"
+                         class="text-slate-400 hover:text-white transition"
+                         ActiveClass="text-white">
+                    Каталог
+                </NavLink>
+
+                <AuthorizeView Context="authState">
+                    <Authorized>
+
+                        <NavLink href="/orders"
+                                 class="text-slate-400 hover:text-white transition"
+                                 ActiveClass="text-white">
+                            Мои заказы
+                        </NavLink>
+
+                        <AuthorizeView Roles="Admin">
+                            <NavLink href="/admin"
+                                     class="text-violet-400 hover:text-violet-300 transition"
+                                     ActiveClass="text-violet-200">
+                                Админ
+                            </NavLink>
+                        </AuthorizeView>
+
+                        <button @onclick="Logout"
+                                class="text-slate-400 hover:text-red-400 transition">
+                            Выйти
+                        </button>
+
+                    </Authorized>
+
+                    <NotAuthorized>
+                        <NavLink href="/login"
+                                 class="px-4 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white transition">
+                            Войти
+                        </NavLink>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
         </div>
+    </nav>
 
-        <article class="content px-4">
-            @Body
-        </article>
+    <!-- CONTENT -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
+        @Body
     </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-800 py-6 text-center text-slate-500 text-xs">
+        © @DateTime.Now.Year OnlineMarket
+    </footer>
 </div>
+
+@code {
+    async Task Logout()
+    {
+        await AuthSvc.LogoutAsync();
+        Nav.NavigateTo("/login");
+    }
+}
